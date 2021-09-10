@@ -1,4 +1,3 @@
-import FileProcessingTest.{filesList, s}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.stream.scaladsl.{FileIO, Merge, Sink, Source}
@@ -11,13 +10,13 @@ object CsvProcessor {
   implicit val system = ActorSystem("FileProcessor")
   implicit val d = system.dispatcher
 
-  def merge(m1: Map[String, List[String]], m2: Map[String, List[String]]): Map[String, List[String]] = {
+  private def merge(m1: Map[String, List[String]], m2: Map[String, List[String]]): Map[String, List[String]] = {
     (m1.keySet ++ m2.keySet).map { i => i -> (m1.get(i).toList.distinct ::: m2.get(i).toList.distinct) }.toMap.map { case (k, v) =>
       (k -> v.flatten)
     }
   }
 
-  def logProcessedMeasurements(source: Source[Map[String, List[String]], Object]) = {
+  private def logProcessedMeasurements(source: Source[Map[String, List[String]], Object]) = {
     val processedSource = source.map { x =>
       x.map { case (_, v) =>
         v.size
@@ -26,7 +25,7 @@ object CsvProcessor {
     processedSource.to(Sink.foreach(x => println(s"Num of processed measurements: $x"))).run()
   }
 
-  def logFailedMeasurements(source: Source[Map[String, List[String]], Object]) = {
+  private def logFailedMeasurements(source: Source[Map[String, List[String]], Object]) = {
     val failedSource = source.map(x =>
       x.map { case (k, v) =>
         v.count(_ == "NaN")
@@ -36,7 +35,7 @@ object CsvProcessor {
 
   }
 
-  def calculateMinAvgMax(source: Source[Map[String, List[String]], Object]) = {
+  private def calculateMinAvgMax(source: Source[Map[String, List[String]], Object]) = {
     source.map { x =>
       x.map { case (k, v) =>
         val sortedList: List[String] = v.sorted
@@ -51,12 +50,12 @@ object CsvProcessor {
     }
   }
 
-  def sortList(list: List[(String, (String, Int, String))]) = {
+  private def sortList(list: List[(String, (String, Int, String))]) = {
     scala.util.Sorting.stableSort(list,
       (e1: (String, (String, Int, String)), e2: (String, (String, Int, String))) => e1._2._2 > e2._2._2).toList
   }
 
-  def mapToListTuple(items: Seq[Map[String, (String, String, String)]]) = {
+  private def mapToListTuple(items: Seq[Map[String, (String, String, String)]]) = {
     items.flatMap { x =>
       x.toList.map { x =>
         (x._1, (x._2._1, x._2._2, x._2._3))
@@ -64,13 +63,13 @@ object CsvProcessor {
     }.toList
   }
 
-  def convertAvgStringToInt(list: List[(String, (String, String, String))]) = {
+  private def convertAvgStringToInt(list: List[(String, (String, String, String))]) = {
     list.map { x =>
       (x._1, (x._2._1, x._2._2.toInt, x._2._3))
     }
   }
 
-  def convertAvgIntToString(list: List[(String, (String, Int, String))]) = {
+  private def convertAvgIntToString(list: List[(String, (String, Int, String))]) = {
     list.map { x =>
       (x._1, (x._2._1, x._2._2.toString, x._2._3))
     }
